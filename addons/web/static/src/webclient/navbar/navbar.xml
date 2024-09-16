@@ -1,0 +1,194 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<templates xml:space="preserve">
+
+  <t t-name="web.NavBar">
+    <header class="o_navbar" t-ref="root">
+      <nav
+        class="o_main_navbar"
+        data-command-category="disabled"
+      >
+        <!-- Apps Menu -->
+        <t t-call="web.NavBar.AppsMenu">
+          <t t-set="apps" t-value="menuService.getApps()" />
+        </t>
+
+        <!-- App Brand -->
+        <DropdownItem
+          t-if="currentApp"
+          href="getMenuItemHref(currentApp)"
+          t-esc="currentApp.name" 
+          class="'o_menu_brand d-none d-md-flex'"
+          dataset="{ menuXmlid: currentApp.xmlid, section: currentApp.id }"
+          onSelected="() => this.onNavBarDropdownItemSelection(currentApp)"
+        />
+
+        <!-- Current App Sections -->
+        <t t-if="currentAppSections.length" t-call="web.NavBar.SectionsMenu">
+          <t t-set="sections" t-value="currentAppSections" />
+        </t>
+
+        <!-- Systray -->
+        <div class="o_menu_systray d-flex flex-shrink-0 ms-auto" role="menu">
+          <t t-foreach="systrayItems" t-as="item" t-key="item.key">
+            <!-- This ensures the correct order of the systray items -->
+            <div t-att-data-index="item.index"/>
+            <ErrorHandler onError="error => this.handleItemError(error, item)">
+                <t t-component="item.Component" t-props="item.props"/>
+            </ErrorHandler>
+          </t>
+        </div>
+      </nav>
+    </header>
+  </t>
+
+  <t t-name="web.NavBar.AppsMenu">
+    <Dropdown hotkey="'h'" title="'Home Menu'" class="'o_navbar_apps_menu'">
+      <t t-set-slot="toggler">
+<svg id="Balloon" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" viewBox="0 0 32 32" width="22" height="22">
+  <style>
+    .st0 { fill: #55C1FA; transition: fill 0.3s, transform 0.3s; }
+    .st1 { fill: #F2C09E; transition: fill 0.3s, transform 0.3s; }
+    #Balloon:hover .st0 { fill: #1E90FF; transform: scale(1.05); }
+    #Balloon:hover .st1 { fill: #FFD700; transform: scale(1.05); }
+  </style>
+  <g>
+    <path class="st0" d="M14.143,2H5.5C3.57,2,2,3.57,2,5.5v8.643c0,0.552,0.448,1,1,1h11.143c0.552,0,1-0.448,1-1V3C15.143,2.448,14.695,2,14.143,2z"/>
+    <path class="st0" d="M26.5,2h-8.643c-0.553,0-1,0.448-1,1v11.143c0,0.552,0.447,1,1,1H29c0.553,0,1-0.448,1-1V5.5C30,3.57,28.43,2,26.5,2z"/>
+    <path class="st0" d="M14.143,16.857H3c-0.552,0-1,0.447-1,1V26.5C2,28.43,3.57,30,5.5,30h8.643c0.552,0,1-0.447,1-1V17.857C15.143,17.305,14.695,16.857,14.143,16.857z"/>
+    <path class="st1" d="M29.383,16.934c-0.374-0.154-0.804-0.069-1.09,0.217L17.15,28.293c-0.286,0.286-0.372,0.716-0.217,1.09C17.088,29.757,17.453,30,17.857,30H26.5c1.93,0,3.5-1.57,3.5-3.5v-8.643C30,17.453,29.757,17.088,29.383,16.934z"/>
+  </g>
+</svg>
+
+
+
+
+
+      </t>
+      <DropdownItem
+        t-foreach="apps"
+        t-as="app"
+        t-key="app.id"
+        class="{ 'o_app': true, focus: menuService.getCurrentApp() === app }"
+        href="getMenuItemHref(app)"
+        t-esc="app.name"
+        dataset="{ menuXmlid: app.xmlid, section: app.id }"
+        onSelected="() => this.onNavBarDropdownItemSelection(app)"
+      />
+    </Dropdown>
+  </t>
+
+  <t t-name="web.NavBar.SectionsMenu">
+    <div class="o_menu_sections d-none d-md-flex flex-grow-1 flex-shrink-1 w-0" t-ref="appSubMenus" role="menu">
+
+      <t t-foreach="sections" t-as="section" t-key="section.id">
+        <t
+          t-set="sectionsVisibleCount"
+          t-value="(sections.length - currentAppSectionsExtra.length)"
+        />
+
+        <t t-if="section_index lt Math.min(10, sectionsVisibleCount)">
+          <t t-set="hotkey" t-value="((section_index + 1) % 10).toString()" />
+        </t>
+        <t t-else="">
+          <t t-set="hotkey" t-value="undefined" />
+        </t>
+
+        <t t-if="!section.childrenTree.length">
+          <DropdownItem
+            class="'o_nav_entry'"
+            href="getMenuItemHref(section)"
+            hotkey="hotkey"
+            t-esc="section.name"
+            dataset="{ menuXmlid: section.xmlid, section: section.id }"
+            onSelected="() => this.onNavBarDropdownItemSelection(section)"
+          />
+        </t>
+        <t t-else="">
+          <MenuDropdown
+            hotkey="hotkey"
+            xmlid="section.xmlid"
+          >
+            <t t-set-slot="toggler">
+              <span t-esc="section.name" t-att-data-section="section.id" />
+            </t>
+            <t t-call="web.NavBar.SectionsMenu.Dropdown.MenuSlot">
+              <t t-set="items" t-value="section.childrenTree" />
+              <t t-set="decalage" t-value="20" />
+            </t>
+          </MenuDropdown>
+        </t>
+      </t>
+
+      <t t-if="currentAppSectionsExtra.length" t-call="web.NavBar.SectionsMenu.MoreDropdown">
+        <t t-set="sections" t-value="currentAppSectionsExtra" />
+        <t t-if="sectionsVisibleCount lt 10">
+          <t t-set="hotkey" t-value="(sectionsVisibleCount + 1 % 10).toString()" />
+        </t>
+      </t>
+
+    </div>
+  </t>
+
+  <t t-name="web.NavBar.DropdownItem" t-inherit="web.DropdownItem" t-inherit-mode="primary">
+    <xpath expr="//t[@t-tag]" position="attributes">
+      <attribute name="t-att-style">props.style</attribute>
+    </xpath>
+  </t>
+
+  <t t-name="web.NavBar.SectionsMenu.Dropdown.MenuSlot">
+    <t t-set="style" t-value="`padding-left: ${decalage}px;`" />
+    <t t-foreach="items" t-as="item" t-key="item.id">
+      <DropdownItem
+        t-if="!item.childrenTree.length"
+        href="getMenuItemHref(item)"
+        class="{
+          'dropdown-item': true,
+          o_dropdown_menu_group_entry: decalage gt 20
+        }"
+        style="style"
+        t-esc="item.name"
+        dataset="{ menuXmlid: item.xmlid, section: item.id }"
+        onSelected="() => this.onNavBarDropdownItemSelection(item)"
+      />
+
+      <t t-else="">
+        <div class="dropdown-menu_group dropdown-header" t-att-style="style" t-esc="item.name" />
+        <t t-call="web.NavBar.SectionsMenu.Dropdown.MenuSlot">
+          <t t-set="items" t-value="item.childrenTree" />
+          <t t-set="decalage" t-value="decalage + 12" />
+        </t>
+      </t>
+    </t>
+  </t>
+
+  <t t-name="web.NavBar.SectionsMenu.MoreDropdown">
+    <Dropdown class="'o_menu_sections_more'" title="'More Menu'" hotkey="hotkey">
+      <t t-set-slot="toggler">
+        <i class="fa fa-plus"/>
+      </t>
+      <t t-foreach="sections" t-as="section" t-key="section.id">
+
+        <t t-if="!section.childrenTree.length">
+          <DropdownItem
+            class="'o_more_dropdown_section'"
+            href="getMenuItemHref(section)"
+            t-esc="section.name"
+            dataset="{ menuXmlid: section.xmlid, section: section.id }"
+            onSelected="() => this.onNavBarDropdownItemSelection(section)"
+          />
+        </t>
+        <t t-else="">
+          <div
+            class="o_more_dropdown_section o_more_dropdown_section_group dropdown-header bg-100"
+            t-esc="section.name"
+          />
+          <t t-call="web.NavBar.SectionsMenu.Dropdown.MenuSlot">
+            <t t-set="items" t-value="section.childrenTree" />
+            <t t-set="decalage" t-value="20" />
+          </t>
+        </t>
+      </t>
+    </Dropdown>
+  </t>
+
+</templates>

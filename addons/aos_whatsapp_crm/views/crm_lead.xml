@@ -1,0 +1,17 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+
+    <record id="crm_case_form_view_leads_whatsapp" model="ir.ui.view">
+        <field name="name">crm.lead.whatsapp.form</field>
+        <field name="model">crm.lead</field>
+        <field name="inherit_id" ref="crm.crm_lead_view_form"/>
+        <field name="arch" type="xml">    
+            <label for="phone" position="before">
+            	<field name="whatsapp"/>
+            </label>
+        </field>
+    </record>
+    
+    
+
+</odoo>
